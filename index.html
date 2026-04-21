@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SwiftPOS - Modern Point of Sale system with integrated warehouse stock management">
+    <title>Point of Sale & Inventory</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <aside id="sidebar" class="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-icon">
+                <span class="material-icons-round">point_of_sale</span>
+            </div>
+            <div class="brand-text">
+                <h1>NewPOS</h1>
+                <span class="brand-tagline">Inventory & Sales</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <button id="nav-pos" class="nav-item active" data-view="pos">
+                <span class="material-icons-round">shopping_cart</span>
+                <span class="nav-label">Point of Sale</span>
+            </button>
+            <button id="nav-inventory" class="nav-item" data-view="inventory">
+                <span class="material-icons-round">inventory_2</span>
+                <span class="nav-label">Warehouse</span>
+                <span id="low-stock-badge" class="nav-badge hidden">0</span>
+            </button>
+            <button id="nav-transactions" class="nav-item" data-view="transactions">
+                <span class="material-icons-round">receipt_long</span>
+                <span class="nav-label">Transactions</span>
+            </button>
+            <button id="nav-dashboard" class="nav-item" data-view="dashboard">
+                <span class="material-icons-round">analytics</span>
+                <span class="nav-label">Dashboard</span>
+            </button>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="clock" id="sidebar-clock">
+                <span class="material-icons-round">schedule</span>
+                <span id="clock-time">00:00</span>
+            </div>
+            <div class="cashier-info">
+                <div class="cashier-avatar">C</div>
+                <div>
+                    <div class="cashier-name">Cashier</div>
+                    <div class="cashier-status">● Online</div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main id="main-content" class="main-content">
+
+        <!-- ===== POS VIEW ===== -->
+        <section id="view-pos" class="view active">
+            <div class="pos-layout">
+                <!-- Products Panel -->
+                <div class="pos-products">
+                    <div class="pos-products-header">
+                        <div class="search-bar" id="pos-search-bar">
+                            <span class="material-icons-round">search</span>
+                            <input type="text" id="pos-search" placeholder="Search products or scan barcode..." autocomplete="off">
+                            <kbd>F2</kbd>
+                        </div>
+                        <div class="category-tabs" id="category-tabs">
+                            <button class="cat-tab active" data-category="all">All</button>
+                        </div>
+                    </div>
+                    <div class="products-grid" id="products-grid">
+                        <!-- Products loaded dynamically -->
+                    </div>
+                </div>
+
+                <!-- Cart Panel -->
+                <div class="pos-cart">
+                    <div class="cart-header">
+                        <h2><span class="material-icons-round">shopping_bag</span> Current Order</h2>
+                        <button id="clear-cart-btn" class="btn-icon" title="Clear cart">
+                            <span class="material-icons-round">delete_sweep</span>
+                        </button>
+                    </div>
+
+                    <div class="cart-items" id="cart-items">
+                        <div class="cart-empty" id="cart-empty">
+                            <span class="material-icons-round">add_shopping_cart</span>
+                            <p>No items in cart</p>
+                            <span class="cart-empty-hint">Click products or scan barcode to add</span>
+                        </div>
+                    </div>
+
+                    <div class="cart-summary">
+                        <div class="summary-row">
+                            <span>Subtotal</span>
+                            <span id="cart-subtotal">$0.00</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Tax (11%)</span>
+                            <span id="cart-tax">$0.00</span>
+                        </div>
+                        <div class="summary-row discount-row hidden" id="discount-row">
+                            <span>Discount</span>
+                            <span id="cart-discount">-$0.00</span>
+                        </div>
+                        <div class="summary-divider"></div>
+                        <div class="summary-row total-row">
+                            <span>Total</span>
+                            <span id="cart-total">$0.00</span>
+                        </div>
+                    </div>
+
+                    <div class="cart-actions">
+                        <button id="discount-btn" class="btn btn-outline">
+                            <span class="material-icons-round">discount</span> Discount
+                        </button>
+                        <button id="hold-btn" class="btn btn-outline">
+                            <span class="material-icons-round">pause_circle</span> Hold
+                        </button>
+                        <button id="pay-btn" class="btn btn-primary btn-pay" disabled>
+                            <span class="material-icons-round">payments</span>
+                            <span>Charge <strong id="pay-amount">$0.00</strong></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== INVENTORY VIEW ===== -->
+        <section id="view-inventory" class="view">
+            <div class="view-header">
+                <div>
+                    <h2 class="view-title">Warehouse Inventory</h2>
+                    <p class="view-subtitle">Manage products and stock levels</p>
+                </div>
+                <div class="view-header-actions">
+                    <button id="export-inventory-btn" class="btn btn-outline">
+                        <span class="material-icons-round">download</span> Export
+                    </button>
+                    <button id="add-product-btn" class="btn btn-primary">
+                        <span class="material-icons-round">add</span> Add Product
+                    </button>
+                </div>
+            </div>
+
+            <div class="inventory-stats" id="inventory-stats">
+                <div class="stat-card">
+                    <div class="stat-icon" style="--stat-color: #6c5ce7;">
+                        <span class="material-icons-round">category</span>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="stat-total-products">0</span>
+                        <span class="stat-label">Total Products</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="--stat-color: #00b894;">
+                        <span class="material-icons-round">inventory</span>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="stat-total-stock">0</span>
+                        <span class="stat-label">Total Stock</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="--stat-color: #fdcb6e;">
+                        <span class="material-icons-round">warning</span>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="stat-low-stock">0</span>
+                        <span class="stat-label">Low Stock</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="--stat-color: #e17055;">
+                        <span class="material-icons-round">remove_shopping_cart</span>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="stat-out-of-stock">0</span>
+                        <span class="stat-label">Out of Stock</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="inventory-toolbar">
+                <div class="search-bar">
+                    <span class="material-icons-round">search</span>
+                    <input type="text" id="inventory-search" placeholder="Search inventory..." autocomplete="off">
+                </div>
+                <div class="filter-group">
+                    <select id="inventory-category-filter" class="select-input">
+                        <option value="all">All Categories</option>
+                    </select>
+                    <select id="inventory-stock-filter" class="select-input">
+                        <option value="all">All Stock</option>
+                        <option value="in-stock">In Stock</option>
+                        <option value="low-stock">Low Stock</option>
+                        <option value="out-of-stock">Out of Stock</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="inventory-table-wrap">
+                <table class="inventory-table" id="inventory-table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>SKU</th>
+                            <th>Category</th>
+                            <th>Price</th>
+                            <th>Cost</th>
+                            <th>Stock</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventory-tbody">
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ===== TRANSACTIONS VIEW ===== -->
+        <section id="view-transactions" class="view">
+            <div class="view-header">
+                <div>
+                    <h2 class="view-title">Transaction History</h2>
+                    <p class="view-subtitle">View past sales and receipts</p>
+                </div>
+                <div class="view-header-actions">
+                    <input type="date" id="tx-date-filter" class="select-input">
+                </div>
+            </div>
+            <div class="transactions-list" id="transactions-list">
+                <div class="empty-state">
+                    <span class="material-icons-round">receipt_long</span>
+                    <p>No transactions yet</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== DASHBOARD VIEW ===== -->
+        <section id="view-dashboard" class="view">
+            <div class="view-header">
+                <div>
+                    <h2 class="view-title">Sales Dashboard</h2>
+                    <p class="view-subtitle">Overview of today's performance</p>
+                </div>
+            </div>
+
+            <div class="dashboard-metrics" id="dashboard-metrics">
+                <div class="metric-card metric-revenue">
+                    <div class="metric-icon"><span class="material-icons-round">attach_money</span></div>
+                    <div class="metric-info">
+                        <span class="metric-value" id="metric-revenue">$0.00</span>
+                        <span class="metric-label">Today's Revenue</span>
+                    </div>
+                </div>
+                <div class="metric-card metric-orders">
+                    <div class="metric-icon"><span class="material-icons-round">receipt</span></div>
+                    <div class="metric-info">
+                        <span class="metric-value" id="metric-orders">0</span>
+                        <span class="metric-label">Orders Today</span>
+                    </div>
+                </div>
+                <div class="metric-card metric-items">
+                    <div class="metric-icon"><span class="material-icons-round">shopping_basket</span></div>
+                    <div class="metric-info">
+                        <span class="metric-value" id="metric-items-sold">0</span>
+                        <span class="metric-label">Items Sold</span>
+                    </div>
+                </div>
+                <div class="metric-card metric-avg">
+                    <div class="metric-icon"><span class="material-icons-round">trending_up</span></div>
+                    <div class="metric-info">
+                        <span class="metric-value" id="metric-avg-order">$0.00</span>
+                        <span class="metric-label">Avg Order Value</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="dashboard-card">
+                    <h3><span class="material-icons-round">bar_chart</span> Sales by Hour</h3>
+                    <div class="chart-container" id="hourly-chart"></div>
+                </div>
+                <div class="dashboard-card">
+                    <h3><span class="material-icons-round">emoji_events</span> Top Products</h3>
+                    <div class="top-products-list" id="top-products"></div>
+                </div>
+                <div class="dashboard-card">
+                    <h3><span class="material-icons-round">pie_chart</span> Sales by Category</h3>
+                    <div class="category-chart" id="category-chart"></div>
+                </div>
+                <div class="dashboard-card">
+                    <h3><span class="material-icons-round">history</span> Recent Sales</h3>
+                    <div class="recent-sales-list" id="recent-sales"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ===== MODALS ===== -->
+
+    <!-- Payment Modal -->
+    <div id="payment-modal" class="modal-overlay hidden">
+        <div class="modal payment-modal">
+            <div class="modal-header">
+                <h2><span class="material-icons-round">payments</span> Payment</h2>
+                <button class="modal-close" id="close-payment-modal">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="payment-total-display">
+                    <span>Total Amount</span>
+                    <span class="payment-total-value" id="payment-total">$0.00</span>
+                </div>
+                <div class="payment-methods">
+                    <button class="payment-method active" data-method="cash">
+                        <span class="material-icons-round">payments</span>
+                        <span>Cash</span>
+                    </button>
+                    <button class="payment-method" data-method="card">
+                        <span class="material-icons-round">credit_card</span>
+                        <span>Card</span>
+                    </button>
+                    <button class="payment-method" data-method="ewallet">
+                        <span class="material-icons-round">account_balance_wallet</span>
+                        <span>E-Wallet</span>
+                    </button>
+                </div>
+
+                <div id="cash-payment-section" class="payment-section">
+                    <label class="input-label">Amount Received</label>
+                    <div class="amount-input-wrap">
+                        <span class="currency-symbol">$</span>
+                        <input type="number" id="cash-received" class="amount-input" placeholder="0.00" step="0.01" min="0" autofocus>
+                    </div>
+                    <div class="quick-cash" id="quick-cash-btns"></div>
+                    <div class="change-display hidden" id="change-display">
+                        <span>Change</span>
+                        <span class="change-value" id="change-value">$0.00</span>
+                    </div>
+                </div>
+
+                <div id="card-payment-section" class="payment-section hidden">
+                    <div class="card-payment-info">
+                        <span class="material-icons-round">contactless</span>
+                        <p>Tap, insert, or swipe card</p>
+                        <span class="card-amount" id="card-amount">$0.00</span>
+                    </div>
+                </div>
+
+                <div id="ewallet-payment-section" class="payment-section hidden">
+                    <div class="card-payment-info">
+                        <span class="material-icons-round">qr_code_2</span>
+                        <p>Scan QR code to pay</p>
+                        <span class="card-amount" id="ewallet-amount">$0.00</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="complete-payment-btn" class="btn btn-primary btn-lg" disabled>
+                    <span class="material-icons-round">check_circle</span> Complete Payment
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Form Modal -->
+    <div id="product-modal" class="modal-overlay hidden">
+        <div class="modal product-form-modal">
+            <div class="modal-header">
+                <h2 id="product-modal-title"><span class="material-icons-round">add_box</span> Add Product</h2>
+                <button class="modal-close" id="close-product-modal">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="product-form">
+                    <input type="hidden" id="product-id">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="input-label" for="product-name">Product Name *</label>
+                            <input type="text" id="product-name" class="form-input" required placeholder="e.g. Organic Coffee Beans">
+                        </div>
+                        <div class="form-group">
+                            <label class="input-label" for="product-sku">SKU *</label>
+                            <input type="text" id="product-sku" class="form-input" required placeholder="e.g. COF-001">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="input-label" for="product-category">Category *</label>
+                            <input type="text" id="product-category" class="form-input" required list="category-list" placeholder="e.g. Beverages">
+                            <datalist id="category-list"></datalist>
+                        </div>
+                        <div class="form-group">
+                            <label class="input-label" for="product-emoji">Icon/Emoji</label>
+                            <input type="text" id="product-emoji" class="form-input" placeholder="e.g. ☕" maxlength="4">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="input-label" for="product-price">Sell Price ($) *</label>
+                            <input type="number" id="product-price" class="form-input" required step="0.01" min="0" placeholder="0.00">
+                        </div>
+                        <div class="form-group">
+                            <label class="input-label" for="product-cost">Cost Price ($) *</label>
+                            <input type="number" id="product-cost" class="form-input" required step="0.01" min="0" placeholder="0.00">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="input-label" for="product-stock">Stock Quantity *</label>
+                            <input type="number" id="product-stock" class="form-input" required min="0" placeholder="0">
+                        </div>
+                        <div class="form-group">
+                            <label class="input-label" for="product-min-stock">Min Stock Alert</label>
+                            <input type="number" id="product-min-stock" class="form-input" min="0" placeholder="10" value="10">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" id="cancel-product-btn">Cancel</button>
+                <button type="submit" form="product-form" class="btn btn-primary" id="save-product-btn">
+                    <span class="material-icons-round">save</span> Save Product
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Discount Modal -->
+    <div id="discount-modal" class="modal-overlay hidden">
+        <div class="modal discount-modal">
+            <div class="modal-header">
+                <h2><span class="material-icons-round">discount</span> Apply Discount</h2>
+                <button class="modal-close" id="close-discount-modal">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="discount-types">
+                    <button class="discount-type active" data-type="percentage">
+                        <span class="material-icons-round">percent</span>
+                        <span>Percentage</span>
+                    </button>
+                    <button class="discount-type" data-type="fixed">
+                        <span class="material-icons-round">attach_money</span>
+                        <span>Fixed Amount</span>
+                    </button>
+                </div>
+                <div class="form-group" style="margin-top:1.5rem;">
+                    <label class="input-label" id="discount-label">Discount (%)</label>
+                    <input type="number" id="discount-value" class="form-input" min="0" max="100" placeholder="0" step="0.01">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" id="remove-discount-btn">Remove Discount</button>
+                <button class="btn btn-primary" id="apply-discount-btn">
+                    <span class="material-icons-round">check</span> Apply
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Receipt Modal -->
+    <div id="receipt-modal" class="modal-overlay hidden">
+        <div class="modal receipt-modal">
+            <div class="modal-header">
+                <h2><span class="material-icons-round">receipt</span> Receipt</h2>
+                <button class="modal-close" id="close-receipt-modal">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="receipt" id="receipt-content">
+                    <!-- Receipt generated dynamically -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" id="print-receipt-btn">
+                    <span class="material-icons-round">print</span> Print
+                </button>
+                <button class="btn btn-primary" id="new-sale-btn">
+                    <span class="material-icons-round">add</span> New Sale
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stock Adjustment Modal -->
+    <div id="stock-modal" class="modal-overlay hidden">
+        <div class="modal stock-modal">
+            <div class="modal-header">
+                <h2><span class="material-icons-round">inventory</span> Adjust Stock</h2>
+                <button class="modal-close" id="close-stock-modal">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="stock-product-name" id="stock-product-name"></p>
+                <p class="stock-current" id="stock-current-display">Current Stock: 0</p>
+                <div class="stock-adjust-types">
+                    <button class="stock-adj-type active" data-adj="add">
+                        <span class="material-icons-round">add_circle</span> Add Stock
+                    </button>
+                    <button class="stock-adj-type" data-adj="set">
+                        <span class="material-icons-round">edit</span> Set Stock
+                    </button>
+                </div>
+                <div class="form-group" style="margin-top:1rem;">
+                    <label class="input-label" id="stock-adj-label">Quantity to Add</label>
+                    <input type="number" id="stock-adj-value" class="form-input" min="0" placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label class="input-label">Reason (optional)</label>
+                    <input type="text" id="stock-adj-reason" class="form-input" placeholder="e.g. New shipment received">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" id="cancel-stock-btn">Cancel</button>
+                <button class="btn btn-primary" id="save-stock-btn">
+                    <span class="material-icons-round">check</span> Update Stock
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Held Orders Panel -->
+    <div id="held-orders-panel" class="held-orders-panel hidden">
+        <div class="held-orders-header">
+            <h3><span class="material-icons-round">pause_circle</span> Held Orders</h3>
+            <button class="btn-icon" id="close-held-panel">
+                <span class="material-icons-round">close</span>
+            </button>
+        </div>
+        <div class="held-orders-list" id="held-orders-list"></div>
+    </div>
+
+    <!-- Mobile Cart Toggle FAB -->
+    <button id="mobile-cart-toggle" class="mobile-cart-fab hidden">
+        <span class="material-icons-round">shopping_bag</span>
+        <span class="mobile-cart-badge" id="mobile-cart-badge">0</span>
+    </button>
+
+    <!-- Mobile Cart Overlay -->
+    <div id="mobile-cart-overlay" class="mobile-cart-overlay hidden"></div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
